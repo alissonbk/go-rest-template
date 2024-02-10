@@ -14,11 +14,11 @@ func ConnectDB() *gorm.DB {
 	dsn := os.Getenv("DB_DSN")
 	maxOpen, err := strconv.Atoi(os.Getenv("DB_MAX_OPEN_CONN"))
 	if err != nil {
-		log.Fatal("ENV DB_MAX_OPEN_CONN should be an integer!!")
+		log.Fatal("ENV DB_MAX_OPEN_CONN should be an integer. Error: ", err)
 	}
 	maxIdle, err := strconv.Atoi(os.Getenv("DB_MAX_IDLE_CONN"))
 	if err != nil {
-		log.Fatal("ENV DB_MAX_IDLE_CONN should be an integer!!")
+		log.Fatal("ENV DB_MAX_IDLE_CONN should be an integer. Error: ", err)
 	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})

@@ -3,6 +3,7 @@ package entity
 import "com.github.alissonbk/go-rest-template/app/constant"
 
 type User struct {
+	Id       int           `gorm:"column:id; primary_key; not null" json:"id"`
 	Name     string        `gorm:"column:name" json:"name"`
 	Email    string        `gorm:"column:email;index:idx_email,unique" json:"email"`
 	Password string        `gorm:"column:password;->:false" json:"-"`
