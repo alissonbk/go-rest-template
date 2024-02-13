@@ -2,8 +2,6 @@ package constant
 
 // Internal status messages to responses and error handling
 type ResponseStatus int
-type Headers int
-type General int
 
 const (
 	Success ResponseStatus = iota + 1

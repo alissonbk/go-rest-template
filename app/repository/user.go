@@ -39,8 +39,9 @@ func (u UserRepository) Save(user *entity.User) (entity.User, error) {
 	return *user, nil
 }
 
-func (u UserRepository) Update(user *entity.User) error {
-	err := u.db.Model(user).Updates(*user).Error
+func (u UserRepository) Update(user entity.User) error {
+	log.Info(user)
+	err := u.db.Model(&user).Updates(user).Error
 	if err != nil {
 		log.Error("Failed to update user. Error: ", err)
 		return err

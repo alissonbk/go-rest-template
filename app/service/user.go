@@ -38,7 +38,7 @@ func (s *UserService) GetByID(id int) (entity.User, error) {
 }
 
 func (s *UserService) Update(user entity.User) error {
-	return s.repository.Update(&user)
+	return s.repository.Update(user)
 }
 
 func (s *UserService) Delete(id int) error {
