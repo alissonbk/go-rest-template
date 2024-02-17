@@ -12,7 +12,7 @@ type UserDTO struct {
 	Role     constant.Role `json:"role"`
 }
 
-func (dto UserDTO) ParseUserDTOToEntity() entity.User {
+func (dto UserDTO) ToEntity() entity.User {
 	return entity.User{
 		Name:     dto.Name,
 		Email:    dto.Email,

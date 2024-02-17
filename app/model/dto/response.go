@@ -10,7 +10,7 @@ type Response[T any] struct {
 
 func BuildResponse[T any](status constant.ResponseStatus, message string, data T) Response[T] {
 	if message == "" {
-		message = status.GetResponseMessage()
+		message = status.GetResponseStatus()
 	}
 	return Response[T]{
 		ResponseStatus:  status.GetResponseStatus(),

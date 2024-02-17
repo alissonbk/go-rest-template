@@ -1,8 +1,11 @@
 package service
 
 import (
+	"com.github.alissonbk/go-rest-template/app/constant"
+	"com.github.alissonbk/go-rest-template/app/exception"
 	"com.github.alissonbk/go-rest-template/app/model/entity"
 	"com.github.alissonbk/go-rest-template/app/repository"
+	log "github.com/sirupsen/logrus"
 )
 
 type UserService struct {
@@ -21,12 +24,14 @@ func (s *UserService) GetAll() ([]entity.User, error) {
 	return users, nil
 }
 
-func (s *UserService) Save(user entity.User) (entity.User, error) {
+func (s *UserService) Save(user entity.User) entity.User {
 	savedUser, err := s.repository.Save(&user)
 	if err != nil {
-		return entity.User{}, err
+		log.Error(err)
+		exception.PanicException(constant.DBQueryFailed, "")
+		return entity.User{}
 	}
-	return savedUser, nil
+	return savedUser
 }
 
 func (s *UserService) GetByID(id int) (entity.User, error) {
@@ -37,8 +42,8 @@ func (s *UserService) GetByID(id int) (entity.User, error) {
 	return user, nil
 }
 
-func (s *UserService) Update(user entity.User) error {
-	return s.repository.Update(user)
+func (s *UserService) Update(user entity.User) {
+	s.repository.Update(user)
 }
 
 func (s *UserService) Delete(id int) error {

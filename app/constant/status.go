@@ -1,20 +1,31 @@
 package constant
 
-// Internal status messages to responses and error handling
+// ResponseStatus is a way to facilitate debugging and internal error handling
 type ResponseStatus int
 
 const (
-	Success ResponseStatus = iota + 1
+	Success ResponseStatus = iota
 	DataNotFound
 	UnknownError
 	InvalidRequest
 	Unauthorized
+	ParsingFailed
+	DBQueryFailed
+	DBNoRowsAffected
 )
 
 func (r ResponseStatus) GetResponseStatus() string {
-	return [...]string{"SUCCESS", "DATA_NOT_FOUND", "UNKNOWN_ERROR", "INVALID_REQUEST", "UNAUTHORIZED"}[r-1]
+	return [...]string{
+		"SUCCESS",
+		"DATA_NOT_FOUND",
+		"UNKNOWN_ERROR",
+		"INVALID_REQUEST",
+		"UNAUTHORIZED",
+		"PARSING_FAILED",
+		"DB_QUERY_FAILED",
+		"DB_NO_ROWS_AFFECTED"}[r]
 }
 
-func (r ResponseStatus) GetResponseMessage() string {
-	return [...]string{"Success", "Data Not Found", "Unknown Error", "Invalid Request", "Unauthorized"}[r-1]
+func (r ResponseStatus) GetNumber() int {
+	return int(r)
 }

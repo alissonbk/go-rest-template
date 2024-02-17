@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"com.github.alissonbk/go-rest-template/app/constant"
+	"com.github.alissonbk/go-rest-template/app/exception"
 	"com.github.alissonbk/go-rest-template/app/model/entity"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -39,14 +41,19 @@ func (u UserRepository) Save(user *entity.User) (entity.User, error) {
 	return *user, nil
 }
 
-func (u UserRepository) Update(user entity.User) error {
+func (u UserRepository) Update(user entity.User) {
 	log.Info(user)
-	err := u.db.Model(&user).Updates(user).Error
-	if err != nil {
-		log.Error("Failed to update user. Error: ", err)
-		return err
+
+	tx := u.db.Model(&user).Updates(user)
+
+	if tx.RowsAffected < 1 {
+		log.Warning("0 Rows affected.")
+		exception.PanicException(constant.DBNoRowsAffected, "")
 	}
-	return nil
+	if tx.Error != nil {
+		log.Error("Failed to update user. Error: ", tx.Error)
+		exception.PanicException(constant.DBQueryFailed, "xd")
+	}
 }
 
 func (u UserRepository) FindUserById(id int) (entity.User, error) {
