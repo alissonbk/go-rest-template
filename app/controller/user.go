@@ -20,7 +20,9 @@ func NewUserController(service *service.UserService) *UserController {
 }
 
 func (uc *UserController) GetAll(ctx *gin.Context) {
-	return
+	defer exception.PanicHandler(ctx)
+	users := uc.service.GetAll()
+	ctx.JSON(200, users)
 }
 
 func (uc *UserController) Save(ctx *gin.Context) {
@@ -39,11 +41,20 @@ func (uc *UserController) Save(ctx *gin.Context) {
 }
 
 func (uc *UserController) GetByID(ctx *gin.Context) {
-	return
+	defer exception.PanicHandler(ctx)
+
+	id, err := strconv.Atoi(ctx.Param("userID"))
+	if err != nil {
+		exception.PanicException(constant.InvalidRequest, "Could not handle path parameter(s)")
+	}
+
+	user := uc.service.GetByID(id)
+	ctx.JSON(200, user)
 }
 
 func (uc *UserController) Update(ctx *gin.Context) {
 	defer exception.PanicHandler(ctx)
+
 	var userDTO dto.UserDTO
 	err := ctx.BindJSON(&userDTO)
 	if err != nil {
@@ -57,9 +68,18 @@ func (uc *UserController) Update(ctx *gin.Context) {
 		log.Error(err)
 		exception.PanicException(constant.InvalidRequest, "Invalid path Parameter")
 	}
+
 	uc.service.Update(user)
 }
 
 func (uc *UserController) Delete(ctx *gin.Context) {
-	return
+	defer exception.PanicHandler(ctx)
+
+	id, err := strconv.Atoi(ctx.Param("userID"))
+	if err != nil {
+		exception.PanicException(constant.InvalidRequest, "Invalid path Parameter")
+	}
+
+	uc.service.Delete(id)
+	ctx.JSON(200, nil)
 }

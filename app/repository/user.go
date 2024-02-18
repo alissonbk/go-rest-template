@@ -4,8 +4,10 @@ import (
 	"com.github.alissonbk/go-rest-template/app/constant"
 	"com.github.alissonbk/go-rest-template/app/exception"
 	"com.github.alissonbk/go-rest-template/app/model/entity"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type UserRepository struct {
@@ -20,25 +22,29 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (u UserRepository) FindAllUser() ([]entity.User, error) {
+func (u UserRepository) FindAllUser() []entity.User {
 	var users []entity.User
 
 	var err = u.db.Find(&users).Error
+	fmt.Println(users)
 	if err != nil {
 		log.Error("Failed to get all users. Error: ", err)
-		return nil, err
+		exception.PanicException(constant.DBQueryFailed, "")
 	}
 
-	return users, nil
+	return users
 }
 
-func (u UserRepository) Save(user *entity.User) (entity.User, error) {
-	err := u.db.Save(user).Error
-	if err != nil {
-		log.Error("Failed to save user. Error: ", err)
-		return entity.User{}, err
+func (u UserRepository) Save(user *entity.User) entity.User {
+	tx := u.db.Save(user)
+	if tx.Error != nil {
+		log.Error("Failed to save user. Error: ", tx.Error)
+		if strings.Contains(tx.Error.Error(), "duplicate key") {
+			exception.PanicException(constant.DBDuplicatedKey, "Email already exists")
+		}
+		exception.PanicException(constant.DBQueryFailed, "")
 	}
-	return *user, nil
+	return *user
 }
 
 func (u UserRepository) Update(user entity.User) {
@@ -56,23 +62,30 @@ func (u UserRepository) Update(user entity.User) {
 	}
 }
 
-func (u UserRepository) FindUserById(id int) (entity.User, error) {
+func (u UserRepository) FindUserById(id int) entity.User {
 	user := entity.User{
 		Id: id,
 	}
-	err := u.db.First(&user, "id = ?", id).Error
-	if err != nil {
-		log.Error("Failed to find user by id. Error: ", err)
-		return entity.User{}, err
+	tx := u.db.First(&user)
+	if tx.Error != nil {
+		if strings.Contains(tx.Error.Error(), "record not found") {
+			exception.PanicException(constant.DataNotFound, "Not found")
+		}
+		log.Error("Failed to find user by id. Error: ", tx.Error)
+		exception.PanicException(constant.DBQueryFailed, "")
 	}
-	return user, nil
+	return user
 }
 
-func (u UserRepository) DeleteUserById(id int) error {
-	err := u.db.Delete(&entity.User{}, id).Error
-	if err != nil {
-		log.Error("Failed to delete user. Error: ", err)
-		return err
+func (u UserRepository) DeleteUserById(id int) {
+	tx := u.db.Delete(&entity.User{}, id)
+
+	if tx.RowsAffected < 1 {
+		log.Warn("Delete got 0 rows affected")
+		exception.PanicException(constant.DBNoRowsAffected, "No rows affected")
 	}
-	return nil
+	if tx.Error != nil {
+		log.Error("Failed to delete user. Error: ", tx.Error)
+		exception.PanicException(constant.DBQueryFailed, "")
+	}
 }

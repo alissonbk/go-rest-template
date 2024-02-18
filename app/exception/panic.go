@@ -26,6 +26,12 @@ func PanicHandler(c *gin.Context) {
 		msg := strings.Trim(strArr[1], " ")
 
 		switch statusKey {
+		case constant.DBDuplicatedKey.GetNumber():
+			c.JSON(http.StatusConflict, dto.BuildResponse[interface{}](
+				constant.DBDuplicatedKey,
+				msg,
+				nil,
+			))
 		case constant.DBNoRowsAffected.GetNumber():
 			c.JSON(http.StatusNotModified, nil)
 		case constant.ParsingFailed.GetNumber():
@@ -43,7 +49,6 @@ func PanicHandler(c *gin.Context) {
 		case constant.InvalidRequest.GetNumber():
 			c.JSON(http.StatusBadRequest, dto.BuildResponse[interface{}](constant.InvalidRequest, msg, nil))
 		default:
-			fmt.Println(statusKey)
 			c.JSON(http.StatusInternalServerError, dto.BuildResponse[interface{}](
 				constant.UnknownError,
 				msg,

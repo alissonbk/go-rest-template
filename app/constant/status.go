@@ -12,6 +12,7 @@ const (
 	ParsingFailed
 	DBQueryFailed
 	DBNoRowsAffected
+	DBDuplicatedKey
 )
 
 func (r ResponseStatus) GetResponseStatus() string {
@@ -23,7 +24,8 @@ func (r ResponseStatus) GetResponseStatus() string {
 		"UNAUTHORIZED",
 		"PARSING_FAILED",
 		"DB_QUERY_FAILED",
-		"DB_NO_ROWS_AFFECTED"}[r]
+		"DB_NO_ROWS_AFFECTED",
+		"DB_DUPLICATED_KEY"}[r]
 }
 
 func (r ResponseStatus) GetNumber() int {

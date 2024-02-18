@@ -7,7 +7,7 @@ type User struct {
 	Name     string        `gorm:"column:name" json:"name"`
 	Email    string        `gorm:"column:email;index:idx_email,unique" json:"email"`
 	Password string        `gorm:"column:password;" json:"password"`
-	Status   int           `gorm:"column:status" json:"status"`
+	IsActive bool          `gorm:"column:is_active" json:"isActive"`
 	Role     constant.Role `gorm:"column:role" json:"role"`
 	BaseEntity
 }
