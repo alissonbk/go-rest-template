@@ -14,10 +14,11 @@ type UserRepository struct {
 	db *gorm.DB
 }
 
+// NewUserRepository thus #AutoMigrate will be executed at compile time because of the dependency injection
 func NewUserRepository(db *gorm.DB) *UserRepository {
 	err := db.AutoMigrate(&entity.User{})
 	if err != nil {
-		log.Error("Failed to migrate user. Error: ", err)
+		panic("Failed to migrate user: " + err.Error())
 	}
 	return &UserRepository{db: db}
 }

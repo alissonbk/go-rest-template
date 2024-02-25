@@ -1,12 +1,8 @@
 package constant
 
-type Role int
+type Role string
 
 const (
-	Admin Role = iota
-	User
+	Admin Role = "ADMIN"
+	User  Role = "USER"
 )
-
-func (r Role) GetRole() string {
-	return [2]string{"ADMIN", "USER"}[r]
-}

@@ -21,6 +21,7 @@ func Init() *gin.Engine {
 	})
 	api := router.Group("/api/v1")
 	{
+		// The User domain it's only for example purpose...
 		user := api.Group("/user")
 		user.GET("", userController.GetAll)
 		user.POST("", userController.Save)
