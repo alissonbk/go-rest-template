@@ -1,10 +1,11 @@
 package router
 
 import (
+	"net/http"
+
 	"com.github.alissonbk/go-rest-template/app/constant"
 	"com.github.alissonbk/go-rest-template/app/model/dto"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 func Init() *gin.Engine {
@@ -17,7 +18,7 @@ func Init() *gin.Engine {
 	userController := injection.NewUserController()
 
 	router.GET("", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, dto.BuildResponse[any](constant.Success, "Hello", nil))
+		ctx.JSON(http.StatusOK, dto.BuildResponse[any](constant.Success, "Hello"))
 	})
 	api := router.Group("/api/v1")
 	{
