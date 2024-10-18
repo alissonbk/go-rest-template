@@ -28,8 +28,6 @@ func Init() *gin.Engine {
 		user.POST("", userController.Save)
 		user.GET("/:userID", userController.GetByID)
 		user.PUT("/:userID", userController.Update)
-		user.DELETE("/:userID", userController.Delete)
-
 	}
 
 	return router

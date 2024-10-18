@@ -18,8 +18,9 @@ FROM scratch
 COPY --from=golang /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=golang /app/.env .
+COPY --from=golang /app/config/migrations /config/migrations/
 # COPY --from=golang /app/assets /assets/
-# COPY --from=golang /app/config/migrations /config/migrations/
+
 
 COPY --from=golang /go-rest-template .
 

@@ -3,90 +3,77 @@ package repository
 import (
 	"com.github.alissonbk/go-rest-template/app/constant"
 	"com.github.alissonbk/go-rest-template/app/exception"
+	"com.github.alissonbk/go-rest-template/app/model/dto"
 	"com.github.alissonbk/go-rest-template/app/model/entity"
-	"fmt"
-	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
-	"strings"
+	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
 type UserRepository struct {
-	db *gorm.DB
+	db *sqlx.DB
 }
 
 // NewUserRepository thus #AutoMigrate will be executed at compile time because of the dependency injection
-func NewUserRepository(db *gorm.DB) *UserRepository {
-	err := db.AutoMigrate(&entity.User{})
-	if err != nil {
-		panic("Failed to migrate user: " + err.Error())
-	}
+func NewUserRepository(db *sqlx.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (u UserRepository) FindAllUser() []entity.User {
-	var users []entity.User
+func (u UserRepository) FindAllUser() []*entity.User {
+	var users []*entity.User
 
-	var err = u.db.Find(&users).Error
-	fmt.Println(users)
+	rows, err := u.db.Queryx("select * from \"user\"")
 	if err != nil {
-		log.Error("Failed to get all users. Error: ", err)
+		logrus.Error("Failed to get all users. Error: ", err)
 		exception.PanicException(constant.DBQueryFailed, "")
 	}
 
+	for rows.Next() {
+		results := make(map[string]interface{})
+		err = rows.MapScan(results)
+		if err != nil {
+			exception.PanicException(constant.DBQueryFailed, "")
+		}
+		users = append(users, &entity.User{
+			Name:  results["name"].(string),
+			Email: results["email"].(string),
+		})
+	}
 	return users
 }
 
-func (u UserRepository) Save(user *entity.User) entity.User {
-	tx := u.db.Save(user)
-	if tx.Error != nil {
-		log.Error("Failed to save user. Error: ", tx.Error)
-		if strings.Contains(tx.Error.Error(), "duplicate key") {
-			exception.PanicException(constant.DBDuplicatedKey, "Email already exists")
-		}
-		exception.PanicException(constant.DBQueryFailed, "")
+func (u UserRepository) Save(user dto.UserDTO) {
+	result, err := u.db.Exec(
+		`INSERT INTO "user" (name, email, password) VALUES ($1, $2, $3)`,
+		user.Name, user.Email, user.Password,
+	)
+	if err != nil {
+		logrus.Error("Failed to save user. Error: ", err.Error())
+		exception.PanicException(constant.DBQueryFailed, err.Error())
 	}
-	return *user
+
+	if rowsAffected, err := result.RowsAffected(); err != nil || rowsAffected <= 0 {
+		logrus.Error("no rows affected")
+		exception.PanicException(constant.DBQueryFailed, err.Error())
+	}
 }
 
-func (u UserRepository) Update(user entity.User) {
-	log.Info(user)
+func (u UserRepository) Update(user entity.User) error {
+	result := u.db.MustExec("update user set name = $1", user.Name)
 
-	tx := u.db.Model(&user).Updates(user)
+	ra, err := result.RowsAffected()
+	if err != nil || ra <= 0 {
+		return err
+	}
 
-	if tx.RowsAffected < 1 {
-		log.Warning("0 Rows affected.")
-		exception.PanicException(constant.DBNoRowsAffected, "")
-	}
-	if tx.Error != nil {
-		log.Error("Failed to update user. Error: ", tx.Error)
-		exception.PanicException(constant.DBQueryFailed, "xd")
-	}
+	return nil
 }
 
 func (u UserRepository) FindUserById(id int) entity.User {
-	user := entity.User{
-		Id: id,
-	}
-	tx := u.db.First(&user)
-	if tx.Error != nil {
-		if strings.Contains(tx.Error.Error(), "record not found") {
-			exception.PanicException(constant.DataNotFound, "Not found")
-		}
-		log.Error("Failed to find user by id. Error: ", tx.Error)
-		exception.PanicException(constant.DBQueryFailed, "")
+	var user entity.User
+	err := u.db.Get(&user, "select * from user where id = $1", id)
+
+	if err != nil {
+		exception.PanicException(constant.DBQueryFailed, err.Error())
 	}
 	return user
-}
-
-func (u UserRepository) DeleteUserById(id int) {
-	tx := u.db.Delete(&entity.User{}, id)
-
-	if tx.RowsAffected < 1 {
-		log.Warn("Delete got 0 rows affected")
-		exception.PanicException(constant.DBNoRowsAffected, "No rows affected")
-	}
-	if tx.Error != nil {
-		log.Error("Failed to delete user. Error: ", tx.Error)
-		exception.PanicException(constant.DBQueryFailed, "")
-	}
 }

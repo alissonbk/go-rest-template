@@ -5,13 +5,13 @@ import (
 	"com.github.alissonbk/go-rest-template/app/repository"
 	"com.github.alissonbk/go-rest-template/app/service"
 	"com.github.alissonbk/go-rest-template/config"
-	"gorm.io/gorm"
+	"github.com/jmoiron/sqlx"
 )
 
 // Injection is responsible for dependency injection for each route by returning a `Controller Object` ready to be used by the router
 
 type Injection struct {
-	db *gorm.DB
+	db *sqlx.DB
 }
 
 func NewInjection() *Injection {

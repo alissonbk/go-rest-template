@@ -1,19 +1,51 @@
 package config
 
 import (
+	"fmt"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
-	"log"
+
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
-func ConnectDB() *gorm.DB {
+const (
+	DB_NAME string = "go_rest_template"
+)
+
+type DatabaseInformation struct {
+	DataSourceName  string
+	MaxConnOpenned  int
+	MaxConnIddle    int
+	MaxConnLifetime time.Duration
+}
+
+func ConnectDB() *sqlx.DB {
 	var err error
+
+	dbInfo := GetDatabaseInformation()
+
+	db, err := sqlx.Open("postgres", dbInfo.DataSourceName)
+	if err != nil {
+		logrus.Error("error while connecting to database, Error: ", err)
+	}
+
+	db.SetMaxOpenConns(dbInfo.MaxConnOpenned)
+	db.SetMaxIdleConns(dbInfo.MaxConnIddle)
+	db.SetConnMaxLifetime(dbInfo.MaxConnLifetime)
+
+	runMigrations(db)
+
+	return db
+}
+
+func GetDatabaseInformation() *DatabaseInformation {
 	dsn := os.Getenv("DB_DSN")
 	maxOpen, err := strconv.Atoi(os.Getenv("DB_MAX_OPEN_CONN"))
 	if err != nil {
@@ -24,71 +56,41 @@ func ConnectDB() *gorm.DB {
 		logrus.Fatal("ENV DB_MAX_IDLE_CONN should be an integer. Error: ", err)
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: createDBLogger(),
-	})
-	if err != nil {
-		log.Fatal("Error while connecting to database, Error: ", err)
+	return &DatabaseInformation{
+		DataSourceName:  dsn,
+		MaxConnOpenned:  maxOpen,
+		MaxConnIddle:    maxIdle,
+		MaxConnLifetime: time.Hour,
 	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatal("Error while acquiring sql.DB from gorm lib, Error: ", err)
-	}
-	sqlDB.SetMaxOpenConns(maxOpen)
-	sqlDB.SetMaxIdleConns(maxIdle)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	return db
 }
 
-func createDBLogger() gormlogger.Interface {
-	var logLevel gormlogger.LogLevel
-	var ignoreNotFound bool
-	var parameterizedQueries bool
-	var colorful bool
-	switch strings.ToUpper(os.Getenv("DB_LOG_LEVEL")) {
-	case "PROD":
-		logLevel = gormlogger.Warn
-		ignoreNotFound = true
-		parameterizedQueries = true
-		colorful = false
-	case "DEV":
-		logLevel = gormlogger.Info
-		ignoreNotFound = false
-		parameterizedQueries = false
-		colorful = true
-	case "INFO":
-		logLevel = gormlogger.Info
-		ignoreNotFound = false
-		parameterizedQueries = false
-		colorful = true
-	case "WARN":
-		logLevel = gormlogger.Warn
-		ignoreNotFound = false
-		parameterizedQueries = false
-	case "ERROR":
-		logLevel = gormlogger.Error
-		ignoreNotFound = true
-		parameterizedQueries = false
-	case "SILENT":
-		logLevel = gormlogger.Silent
-		ignoreNotFound = true
-		parameterizedQueries = true
-	default:
-		logLevel = gormlogger.Error
-		ignoreNotFound = true
-		parameterizedQueries = true
+func runMigrations(db *sqlx.DB) {
+	workingDir, err := os.Getwd()
+	if err != nil {
+		panic("could not get current directory, " + err.Error())
 	}
 
-	return gormlogger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		gormlogger.Config{
-			SlowThreshold:             time.Second,
-			LogLevel:                  logLevel,
-			IgnoreRecordNotFoundError: ignoreNotFound,
-			ParameterizedQueries:      parameterizedQueries,
-			Colorful:                  colorful,
-		},
+	postgresDriver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+	if err != nil {
+		panic("failed to load postgres driver, " + err.Error())
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		fmt.Sprintf("file://%s/config/migrations", workingDir),
+		DB_NAME,
+		postgresDriver,
 	)
+	if err != nil {
+		panic("failed to setup migrations config, " + err.Error())
+	}
+
+	err = m.Up()
+	if err != nil {
+		if err.Error() == "no change" {
+			return
+		}
+		panic("failed to run migrations, " + err.Error())
+	}
+
+	logrus.Info("migrations ran sucessfuly")
 }
