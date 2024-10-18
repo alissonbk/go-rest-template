@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    ports:
+      - "5000:5000"
+    network_mode: host
+    develop:
+      watch:
+        - action: rebuild
+          path: .
