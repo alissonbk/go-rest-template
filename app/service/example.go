@@ -9,7 +9,7 @@ type ExampleService struct {
 	repository *repository.ExampleRepository
 }
 
-func NewUserService(repository *repository.ExampleRepository) *ExampleService {
+func NewExampleService(repository *repository.ExampleRepository) *ExampleService {
 	return &ExampleService{repository: repository}
 }
 

@@ -18,8 +18,8 @@ func NewInjection() *Injection {
 	return &Injection{db: config.ConnectDB()}
 }
 
-func (i *Injection) NewUserController() *controller.ExampleController {
+func (i *Injection) NewExampleController() *controller.ExampleController {
 	r := repository.NewExampleRepository(i.db)
-	s := service.NewUserService(r)
+	s := service.NewExampleService(r)
 	return controller.NewExampleController(s)
 }
