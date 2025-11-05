@@ -38,3 +38,38 @@ func (u ExampleRepository) FindAllExample() []*entity.Example {
 	}
 	return examples
 }
+
+// package repository
+
+// import (
+// 	"com.github.alissonbk/go-rest-template/app/constant"
+// 	"com.github.alissonbk/go-rest-template/app/exception"
+// 	"com.github.alissonbk/go-rest-template/app/model/entity"
+// 	log "github.com/sirupsen/logrus"
+// 	"gorm.io/gorm"
+// )
+
+// type ExampleRepository struct {
+// 	db *gorm.DB
+// }
+
+// // AutoMigrate will be executed at compile time because of the dependency injection
+// func NewExampleRepository(db *gorm.DB) *ExampleRepository {
+// 	err := db.AutoMigrate(&entity.Example{})
+// 	if err != nil {
+// 		panic("Failed to migrate example: " + err.Error())
+// 	}
+// 	return &ExampleRepository{db: db}
+// }
+
+// func (u ExampleRepository) FindAllUser() []entity.Example {
+// 	var examples []entity.Example
+
+// 	var err = u.db.Find(&examples).Error
+// 	if err != nil {
+// 		log.Error("Failed to get all users. Error: ", err)
+// 		exception.PanicException(constant.DBQueryFailed, "")
+// 	}
+
+// 	return examples
+// }

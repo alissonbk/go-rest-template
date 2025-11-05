@@ -8,16 +8,28 @@ import (
 	"strings"
 
 	"com.github.alissonbk/go-rest-template/app/constant"
-	"com.github.alissonbk/go-rest-template/app/model/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
+
+func buildResponse(status constant.ResponseStatus, message string) map[string]string {
+	return map[string]string{
+		"response_status":  status.GetResponseStatus(),
+		"response_message": message,
+	}
+}
 
 // PanicHandler is responsible for auto returning a response with
 // a predefined status code and message when a #PanicException occurs
 func PanicHandler(c *gin.Context) {
 	if err := recover(); err != nil {
-		logrus.Errorf("Error occurred in the following context:\npath: %s\n%s\nparams: %s", c.FullPath(), fmtContextHandlers(c.HandlerNames()), c.Params)
+		logrus.WithFields(logrus.Fields{
+			"path":     c.FullPath(),
+			"handlers": fmtContextHandlers(c.HandlerNames()),
+			"params":   c.Params,
+			"error":    err,
+		}).Error("Panic occurred during request processing")
+
 		str := fmt.Sprint(err)
 
 		var statusKey int
@@ -39,31 +51,28 @@ func PanicHandler(c *gin.Context) {
 
 		switch statusKey {
 		case constant.DBDuplicatedKey.GetNumber():
-			c.JSON(http.StatusConflict, dto.BuildResponse[interface{}](
+			c.JSON(http.StatusConflict, buildResponse(
 				constant.DBDuplicatedKey,
 				msg,
 			))
 		case constant.DBNoRowsAffected.GetNumber():
 			c.JSON(http.StatusNotModified, nil)
 		case constant.ParsingFailed.GetNumber():
-			c.JSON(http.StatusBadRequest, dto.BuildResponse[interface{}](
+			c.JSON(http.StatusBadRequest, buildResponse(
 				constant.ParsingFailed,
 				"Failed to parse you payload into an object"))
-			c.Abort()
 		case constant.DataNotFound.GetNumber():
-			c.JSON(http.StatusBadRequest, dto.BuildResponse[interface{}](constant.DataNotFound, msg))
-			c.Abort()
+			c.JSON(http.StatusBadRequest, buildResponse(constant.DataNotFound, msg))
 		case constant.Unauthorized.GetNumber():
-			c.JSON(http.StatusUnauthorized, dto.BuildResponse[interface{}](constant.Unauthorized, msg))
-			c.Abort()
+			c.JSON(http.StatusUnauthorized, buildResponse(constant.Unauthorized, msg))
 		case constant.InvalidRequest.GetNumber():
-			c.JSON(http.StatusBadRequest, dto.BuildResponse[interface{}](constant.InvalidRequest, msg))
+			c.JSON(http.StatusBadRequest, buildResponse(constant.InvalidRequest, msg))
 		default:
-			c.JSON(http.StatusInternalServerError, dto.BuildResponse[interface{}](
+			c.JSON(http.StatusInternalServerError, buildResponse(
 				constant.UnknownError,
 				"interal error"))
-			c.Abort()
 		}
+		c.Abort()
 	}
 }
 
@@ -82,17 +91,22 @@ func isPanicException(errStr string) bool {
 }
 
 func fmtContextHandlers(handlers []string) string {
-	str := "handlers stack:"
-	for _, h := range handlers {
-		str += "\n\t->" + h
+	if len(handlers) == 0 {
+		return "No handlers in stack"
+	}
+	var sb strings.Builder
+	sb.WriteString("Handler stack:\n")
+	for i, handler := range handlers {
+		sb.WriteString(fmt.Sprintf("\t%d. %s\n", i+1, handler))
 	}
 
-	return str
+	return sb.String()
 }
 
 func GoroutinePanicHandler() {
 	if err := recover(); err != nil {
-		logrus.Warn("recovering from panic in a goroutine")
-		logrus.Error(err)
+		logrus.WithFields(logrus.Fields{
+			"error": err,
+		}).Warn("Recovered from panic in a goroutine")
 	}
 }
